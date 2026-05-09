@@ -11,10 +11,9 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from sqlalchemy import select, func, text
+from src.services.admin_service import AdminService
 from src.config import config
 from src.database.connection import db_manager
-from src.models.domain import User, ActivityLog
 from src.utils.keyboards import main_menu_keyboard, confirm_keyboard
 
 logger = logging.getLogger(__name__)
@@ -68,44 +67,15 @@ async def show_admin_stats(message: Message) -> None:
         return
 
     async with db_manager.session_factory() as session:
-        # Загальна кількість користувачів
-        total_users_result = await session.execute(
-            select(func.count()).select_from(User)
-        )
-        total_users = total_users_result.scalar_one() or 0
-
-        # Активні за останні 7 днів
-        active_result = await session.execute(
-            text("""
-                SELECT COUNT(DISTINCT user_id)
-                FROM activity_logs
-                WHERE created_at >= NOW() - INTERVAL '7 days'
-            """)
-        )
-        active_7d = active_result.scalar_one() or 0
-
-        # Загальна кількість записів активності
-        total_logs_result = await session.execute(
-            select(func.count()).select_from(ActivityLog)
-        )
-        total_logs = total_logs_result.scalar_one() or 0
-
-        # Нові за сьогодні
-        new_today_result = await session.execute(
-            text("""
-                SELECT COUNT(*)
-                FROM users
-                WHERE DATE(registered_at) = CURRENT_DATE
-            """)
-        )
-        new_today = new_today_result.scalar_one() or 0
+        service = AdminService(session)
+        stats = await service.get_statistics()
 
     await message.answer(
         f"📊 <b>Статистика FitTrackBot</b>\n\n"
-        f"👥 Всього користувачів: <b>{total_users}</b>\n"
-        f"🟢 Активних за 7 днів: <b>{active_7d}</b>\n"
-        f"🆕 Нових сьогодні: <b>{new_today}</b>\n"
-        f"📝 Всього записів активності: <b>{total_logs}</b>",
+        f"👥 Всього користувачів: <b>{stats['total_users']}</b>\n"
+        f"🟢 Активних за 7 днів: <b>{stats['active_7d']}</b>\n"
+        f"🆕 Нових сьогодні: <b>{stats['new_today']}</b>\n"
+        f"📝 Всього записів активності: <b>{stats['total_logs']}</b>",
         parse_mode="HTML",
         reply_markup=admin_menu_keyboard(),
     )
@@ -152,8 +122,8 @@ async def confirm_broadcast(message: Message, state: FSMContext) -> None:
     broadcast_text = data["broadcast_text"]
 
     async with db_manager.session_factory() as session:
-        result = await session.execute(select(User.user_id))
-        user_ids = [row[0] for row in result.all()]
+        service = AdminService(session)
+        user_ids = await service.get_all_user_ids()
 
     from aiogram import Bot
     bot = Bot.get_current()
@@ -219,24 +189,26 @@ async def handle_block_id(message: Message, state: FSMContext) -> None:
 async def confirm_block(message: Message, state: FSMContext) -> None:
     if not is_admin(message.from_user.id):
         return
+
     data = await state.get_data()
     target_id = data["block_target_id"]
 
     async with db_manager.session_factory() as session:
-        user = await session.get(User, target_id)
-        if user:
-            await session.delete(user)
-            await session.commit()
-            await message.answer(
-                f"✅ Користувача <code>{target_id}</code> заблоковано та видалено.",
-                parse_mode="HTML",
-                reply_markup=admin_menu_keyboard(),
-            )
-        else:
-            await message.answer(
-                f"❌ Користувача з ID {target_id} не знайдено.",
-                reply_markup=admin_menu_keyboard(),
-            )
+        service = AdminService(session)
+        blocked = await service.block_user(target_id)
+
+    if blocked:
+        await message.answer(
+            f"✅ Користувача <code>{target_id}</code> заблоковано та видалено.",
+            parse_mode="HTML",
+            reply_markup=admin_menu_keyboard(),
+        )
+    else:
+        await message.answer(
+            f"❌ Користувача з ID {target_id} не знайдено.",
+            reply_markup=admin_menu_keyboard(),
+        )
+
     await state.clear()
 
 
