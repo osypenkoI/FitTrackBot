@@ -40,7 +40,7 @@ BATCH_SIZE = 500            # розмір пакету для вставки
 ACTIVITY_TYPES = ["running", "cardio", "strength", "yoga", "cycling", "swimming", "walking"]
 MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"]
 FOOD_NAMES = ["Вівсянка", "Куряча грудка", "Гречка", "Яйця", "Салат", "Рис", "Банан", "Творог"]
-GOAL_TYPES = ["calories_per_day", "workouts_per_week", "steps_per_day"]
+GOAL_TYPES = ["calories_per_day", "workouts_per_week", "calories_burned_total", "duration_minutes_total"]
 ACTIVITY_LEVELS = [a.value for a in ActivityLevel]
 TARGET_GOALS = [t.value for t in TargetGoal]
 

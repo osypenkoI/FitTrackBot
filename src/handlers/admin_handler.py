@@ -126,7 +126,7 @@ async def confirm_broadcast(message: Message, state: FSMContext) -> None:
         user_ids = await service.get_all_user_ids()
 
     from aiogram import Bot
-    bot = Bot.get_current()
+    bot = message.bot
     sent = 0
     failed = 0
     for uid in user_ids:

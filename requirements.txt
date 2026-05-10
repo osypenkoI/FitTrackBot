@@ -20,3 +20,5 @@ fastapi
 uvicorn
 aiohttp
 psutil
+pytest-cov
+radon

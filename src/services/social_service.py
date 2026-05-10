@@ -126,3 +126,26 @@ class SocialService:
         # Сортуємо за прогресом спадаючи
         entries.sort(key=lambda x: x["progress"], reverse=True)
         return entries
+    async def invite_friend_to_challenge(
+        self,
+        requester_id: int,
+        addressee_phone: str,
+        challenge_id: int,
+    ) -> tuple[bool, str, int | None]:
+        """
+        Надсилає запит дружби та додає знайденого користувача до челенджу.
+        """
+        addressee = await self._profile_repo.get_by_phone(addressee_phone)
+
+        if not addressee:
+            return False, "Користувача з таким номером телефону не знайдено.", None
+
+        ok, error = await self.send_friend_request(requester_id, addressee_phone)
+        if not ok:
+            return False, error, None
+
+        joined, join_error = await self.join_challenge(challenge_id, addressee.user_id)
+        if not joined:
+            return False, join_error, addressee.user_id
+
+        return True, "", addressee.user_id

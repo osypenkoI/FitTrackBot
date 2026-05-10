@@ -129,6 +129,27 @@ class GoalsService:
     async def get_all_goals(self, user_id: int) -> list[Goal]:
         """Повертає всі цілі користувача для перегляду та редагування."""
         return await self._goals_repo.get_all_goals(user_id)
+    
+    async def update_goal(
+        self,
+        user_id: int,
+        goal_id: int,
+        field: str,
+        value,
+    ) -> bool:
+        """Оновлює ціль користувача."""
+        goal = await self._goals_repo.get_by_id(goal_id)
+
+        if not goal or goal.user_id != user_id:
+            return False
+
+        setattr(goal, field, value)
+
+        if field == "period_days":
+            goal.end_date = date.today() + timedelta(days=value)
+
+        await self._goals_repo.save(goal)
+        return True
 
 
 class ReminderService:

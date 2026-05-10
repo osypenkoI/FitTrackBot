@@ -1,9 +1,19 @@
 """Сервіс адміністративних функцій FitTrackBot."""
 
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func, text, delete, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.domain import User, ActivityLog
+from src.models.domain import (
+    User,
+    BodyMetrics,
+    ActivityLog,
+    NutritionLog,
+    Goal,
+    Reminder,
+    Challenge,
+    ChallengeParticipant,
+    Friendship,
+)
 
 
 class AdminService:
@@ -55,11 +65,66 @@ class AdminService:
         return [row[0] for row in result.all()]
 
     async def block_user(self, target_id: int) -> bool:
-        """Видаляє користувача з бази даних за Telegram ID."""
+        """
+        Блокує користувача шляхом видалення його облікового запису
+        та всіх пов'язаних записів з бази даних.
+        """
         user = await self._session.get(User, target_id)
         if user is None:
             return False
 
+        created_challenges = select(Challenge.id).where(
+            Challenge.creator_id == target_id
+        )
+
+        # Спочатку видаляємо участь у челенджах, створених цим користувачем
+        await self._session.execute(
+            delete(ChallengeParticipant).where(
+                ChallengeParticipant.challenge_id.in_(created_challenges)
+            )
+        )
+
+        # Видаляємо участь користувача в інших челенджах
+        await self._session.execute(
+            delete(ChallengeParticipant).where(
+                ChallengeParticipant.user_id == target_id
+            )
+        )
+
+        # Видаляємо дружні зв'язки, де користувач був відправником або отримувачем
+        await self._session.execute(
+            delete(Friendship).where(
+                or_(
+                    Friendship.requester_id == target_id,
+                    Friendship.addressee_id == target_id,
+                )
+            )
+        )
+
+        # Видаляємо персональні дані користувача
+        await self._session.execute(
+            delete(BodyMetrics).where(BodyMetrics.user_id == target_id)
+        )
+        await self._session.execute(
+            delete(ActivityLog).where(ActivityLog.user_id == target_id)
+        )
+        await self._session.execute(
+            delete(NutritionLog).where(NutritionLog.user_id == target_id)
+        )
+        await self._session.execute(
+            delete(Goal).where(Goal.user_id == target_id)
+        )
+        await self._session.execute(
+            delete(Reminder).where(Reminder.user_id == target_id)
+        )
+
+        # Видаляємо челенджі, створені користувачем
+        await self._session.execute(
+            delete(Challenge).where(Challenge.creator_id == target_id)
+        )
+
+        # Після очищення залежних записів видаляємо самого користувача
         await self._session.delete(user)
         await self._session.commit()
+
         return True

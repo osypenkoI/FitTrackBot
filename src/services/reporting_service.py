@@ -119,3 +119,11 @@ class ReportingService:
         wb.save(buf)
         buf.seek(0)
         return buf.read()
+    async def find_recipient_by_phone(self, phone: str):
+        """Знаходить користувача-отримувача за номером телефону."""
+        return await self._profile_repo.get_by_phone(phone)
+
+
+    async def get_user_by_id(self, user_id: int):
+        """Повертає користувача за Telegram ID."""
+        return await self._profile_repo.get_by_telegram_id(user_id)

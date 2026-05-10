@@ -9,7 +9,7 @@ from src.models.dto import ActivityInputDTO, NutritionInputDTO
 from src.repository.activity_repo import ActivityRepository
 from src.repository.nutrition_repo import NutritionRepository
 from src.validators.pydantic_validator import PydanticValidator
-
+from src.repository.profile_repo import ProfileRepository
 
 # Калорій на хвилину для кожного типу активності (MET * вага/60)
 CALORIES_PER_MINUTE: dict[str, float] = {
@@ -34,6 +34,7 @@ class ActivityService:
         self._activity_repo = ActivityRepository(session)
         self._nutrition_repo = NutritionRepository(session)
         self._validator = PydanticValidator()
+        self._profile_repo = ProfileRepository(session)
 
     def estimate_calories(
         self, activity_type: str, duration_minutes: int, weight_kg: float = 70.0
@@ -109,3 +110,34 @@ class ActivityService:
         if record_type == "activity":
             return await self._activity_repo.delete_by_id(record_id)
         return await self._nutrition_repo.delete_by_id(record_id)
+
+    async def get_energy_balance(self, user_id: int, calories: float) -> tuple[float, float]:
+        """Повертає енергетичний баланс і TDEE користувача."""
+        metrics = await self._profile_repo.get_latest_metrics(user_id)
+        tdee = metrics.tdee if metrics else 2000.0
+        balance = round(calories - tdee, 1)
+        return balance, tdee
+
+    async def update_record(
+        self,
+        user_id: int,
+        record_id: int,
+        record_type: str,
+        field: str,
+        value,
+    ) -> bool:
+        """Оновлює запис активності або харчування користувача."""
+        if record_type == "activity":
+            repo = self._activity_repo
+        elif record_type == "nutrition":
+            repo = self._nutrition_repo
+        else:
+            return False
+
+        record = await repo.get_by_id(record_id)
+        if not record or record.user_id != user_id:
+            return False
+
+        setattr(record, field, value)
+        await repo.save(record)
+        return True

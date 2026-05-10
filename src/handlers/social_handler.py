@@ -341,27 +341,35 @@ async def confirm_invite(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     async with db_manager.session_factory() as session:
         service = SocialService(session)
-        ok, error = await service.send_friend_request(
+        ok, error, friend_id = await service.invite_friend_to_challenge(
             requester_id=message.from_user.id,
             addressee_phone=data["invite_phone"],
+            challenge_id=data["invite_challenge_id"],
         )
-        if ok:
-            # Також додаємо до учасників челенджу
-            friend = await service._profile_repo.get_by_phone(data["invite_phone"])
-            if friend:
-                joined, _ = await service.join_challenge(
-                    data["invite_challenge_id"], friend.user_id
-                )
 
-    if error and not ok:
-        await message.answer(f"❌ {error}", reply_markup=main_menu_keyboard())
+    if not ok:
+        await message.answer(
+            f"❌ {error}",
+            reply_markup=main_menu_keyboard(),
+        )
     else:
+        if friend_id:
+            try:
+                await message.bot.send_message(
+                    friend_id,
+                    "🏆 Вас запросили до участі у челенджі FitTrackBot!\n\n"
+                    "Відкрийте меню «Челенджі», щоб переглянути участь і прогрес."
+                )
+            except Exception:
+                pass
+
         await message.answer(
             f"✅ Запрошення надіслано на <b>{data['invite_phone']}</b>!\n"
-            f"Друг отримає сповіщення від бота.",
+            "Друг отримав сповіщення від бота.",
             parse_mode="HTML",
             reply_markup=main_menu_keyboard(),
         )
+        
     await state.clear()
 
 

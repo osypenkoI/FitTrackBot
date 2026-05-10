@@ -300,19 +300,18 @@ async def handle_edit_goal_value(message: Message, state: FSMContext) -> None:
 async def confirm_goal_edit(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     async with db_manager.session_factory() as session:
-        from src.repository.goals_repo import GoalsRepository
-        from datetime import timedelta
-        repo = GoalsRepository(session)
-        goal = await repo.get_by_id(data["edit_goal_id"])
-        if goal and goal.user_id == message.from_user.id:
-            field = data["edit_goal_field"]
-            setattr(goal, field, data["edit_goal_value"])
-            if field == "period_days":
-                goal.end_date = date.today() + timedelta(days=data["edit_goal_value"])
-            await repo.save(goal)
-            await message.answer("✅ Ціль оновлено!", reply_markup=main_menu_keyboard())
-        else:
-            await message.answer("❌ Ціль не знайдено.", reply_markup=main_menu_keyboard())
+        service = GoalsService(session)
+        ok = await service.update_goal(
+            user_id=message.from_user.id,
+            goal_id=data["edit_goal_id"],
+            field=data["edit_goal_field"],
+            value=data["edit_goal_value"],
+        )
+
+    if ok:
+        await message.answer("✅ Ціль оновлено!", reply_markup=main_menu_keyboard())
+    else:
+        await message.answer("❌ Ціль не знайдено.", reply_markup=main_menu_keyboard())
     await state.clear()
 
 

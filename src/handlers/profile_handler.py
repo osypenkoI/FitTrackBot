@@ -114,7 +114,7 @@ async def handle_contact(message: Message, state: FSMContext) -> None:
         service = ProfileService(session)
         if current_state == RegistrationStates.waiting_phone:
             await state.update_data(
-                phone=contact.phone_number,
+                phone_number=contact.phone_number,
                 telegram_id=message.from_user.id,
                 username=message.from_user.first_name or message.from_user.username,
             )
@@ -305,10 +305,15 @@ async def restart_registration(message: Message, state: FSMContext) -> None:
     Зберігає лише телефон та telegram_id — їх вводити повторно не потрібно.
     """
     data = await state.get_data()
-    phone = data.get("phone")
+    phone_number = data.get("phone_number")
     telegram_id = data.get("telegram_id")
+
     await state.clear()
-    await state.update_data(phone=phone, telegram_id=telegram_id)
+    await state.update_data(
+        phone_number=phone_number,
+        telegram_id=telegram_id,
+    )
+
     await message.answer(
         "🔄 <b>Дані скинуто.</b> Заповніть форму знову.\n\n"
         "📝 Введіть ваше ім'я (2–50 символів):",

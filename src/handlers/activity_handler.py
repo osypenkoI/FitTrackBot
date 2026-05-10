@@ -4,6 +4,7 @@
 Валідація всіх полів введення з зрозумілими повідомленнями.
 """
 
+from email import message
 import logging
 from datetime import date
 from aiogram import Router, F
@@ -14,8 +15,6 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from src.database.connection import db_manager
 from src.services.activity_service import ActivityService
 from src.services.profile_service import ProfileService
-from src.repository.activity_repo import ActivityRepository
-from src.repository.nutrition_repo import NutritionRepository
 from src.utils.keyboards import (
     activity_type_keyboard, confirm_keyboard, main_menu_keyboard,
 )
@@ -287,14 +286,14 @@ async def handle_bjv(message: Message, state: FSMContext) -> None:
     await state.update_data(proteins=proteins, fats=fats, carbohydrates=carbs)
 
     # Енергетичний баланс (ФВ 2.2.2)
-    async with db_manager.session_factory() as session:
-        from src.repository.profile_repo import ProfileRepository
-        prof_repo = ProfileRepository(session)
-        metrics = await prof_repo.get_latest_metrics(message.from_user.id)
-        tdee = metrics.tdee if metrics else 2000.0
-
     calories = data["calories_intake"]
-    balance = round(calories - tdee, 1)
+
+    async with db_manager.session_factory() as session:
+        service = ActivityService(session)
+        balance, tdee = await service.get_energy_balance(
+            message.from_user.id,
+            calories,
+        )
     balance_text = f"+{balance}" if balance >= 0 else str(balance)
     balance_emoji = "📈" if balance >= 0 else "📉"
 
@@ -491,17 +490,19 @@ async def handle_record_edit_value(message: Message, state: FSMContext) -> None:
 async def confirm_record_edit(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     async with db_manager.session_factory() as session:
-        if data["edit_rec_type"] == "activity":
-            repo = ActivityRepository(session)
-        else:
-            repo = NutritionRepository(session)
-        record = await repo.get_by_id(data["edit_rec_id"])
-        if record and record.user_id == message.from_user.id:
-            setattr(record, data["edit_field"], data["edit_value"])
-            await repo.save(record)
-            await message.answer("✅ Запис оновлено!", reply_markup=main_menu_keyboard())
-        else:
-            await message.answer("❌ Запис не знайдено.", reply_markup=main_menu_keyboard())
+        service = ActivityService(session)
+        ok = await service.update_record(
+            user_id=message.from_user.id,
+            record_id=data["edit_rec_id"],
+            record_type=data["edit_rec_type"],
+            field=data["edit_field"],
+            value=data["edit_value"],
+        )
+
+    if ok:
+        await message.answer("✅ Запис оновлено!", reply_markup=main_menu_keyboard())
+    else:
+        await message.answer("❌ Запис не знайдено.", reply_markup=main_menu_keyboard())
     await state.clear()
 
 

@@ -11,7 +11,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from src.database.connection import db_manager
 from src.services.reporting_service import ReportingService
-from src.repository.profile_repo import ProfileRepository
 from src.utils.keyboards import main_menu_keyboard, report_format_keyboard, confirm_keyboard
 
 logger = logging.getLogger(__name__)
@@ -142,8 +141,8 @@ async def handle_share_phone(message: Message, state: FSMContext) -> None:
 
     # Перевіряємо чи існує такий користувач
     async with db_manager.session_factory() as session:
-        prof_repo = ProfileRepository(session)
-        recipient = await prof_repo.get_by_phone(phone)
+        service = ReportingService(session)
+        recipient = await service.find_recipient_by_phone(phone)
 
     if not recipient:
         await message.answer(
@@ -196,13 +195,13 @@ async def confirm_share(message: Message, state: FSMContext) -> None:
 
     # Отримуємо ім'я відправника
     async with db_manager.session_factory() as session:
-        prof_repo = ProfileRepository(session)
-        sender = await prof_repo.get_by_telegram_id(sender_id)
+        service = ReportingService(session)
+        sender = await service.get_user_by_id(sender_id)
     sender_name = sender.username if sender else "Користувач"
 
     # Надсилаємо файл отримувачу
     from aiogram import Bot
-    bot = Bot.get_current()
+    bot = message.bot
     file = BufferedInputFile(
         pdf_bytes,
         filename=f"fittrackbot_shared_report_{date_from}_{date_to}.pdf",
