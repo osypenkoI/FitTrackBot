@@ -172,11 +172,11 @@ class AnalyticsCore:
 
     def detect_anomalies(self, values: list[float]) -> dict:
         """
-        Виявляє аномалії двома алгоритмами:
+        Виявляє аномалії трьома алгоритмами паралельно:
+        — Z-score (SciPy) як попередній відбір екстремальних значень (|z| > 2.5)
         — Isolation Forest (sklearn) як основний
         — KNN (PyOD) як додатковий для перехресної перевірки.
         Аномалія підтверджується якщо виявлена хоча б одним алгоритмом.
-        Мінімум min_records_anomaly записів.
         """
         if len(values) < config.min_records_anomaly:
             return {
