@@ -14,9 +14,9 @@ class UserRegistrationDTO(BaseModel):
     telegram_id: int
     username: Optional[str] = None
     phone_number: Optional[str] = None
-    weight: float = Field(gt=20, lt=500, description="Вага в кг")
-    height: float = Field(gt=50, lt=300, description="Зріст в см")
-    age: int = Field(gt=5, lt=120, description="Вік у роках")
+    weight: float = Field(ge=20, le=500, description="Вага в кг")
+    height: float = Field(ge=50, le=300, description="Зріст в см")
+    age: int = Field(ge=5, le=120, description="Вік у роках")
     gender: str = Field(pattern="^(male|female)$")
     activity_level: str = Field(
         pattern="^(low|medium|high|very_high)$"
@@ -35,7 +35,7 @@ class ActivityInputDTO(BaseModel):
     """DTO введення фізичної активності."""
     user_id: int
     activity_type: str = Field(min_length=2, max_length=64)
-    duration_minutes: int = Field(gt=0, lt=1440)
+    duration_minutes: int = Field(ge=1, le=1440)
     distance: Optional[float] = Field(default=None, gt=0)
     weight_kg: Optional[float] = Field(default=None, gt=0)
     repetitions: Optional[int] = Field(default=None, gt=0)
@@ -58,8 +58,8 @@ class NutritionInputDTO(BaseModel):
     user_id: int
     meal_type: str = Field(pattern="^(breakfast|lunch|dinner|snack)$")
     food_name: str = Field(min_length=1, max_length=128)
-    amount_grams: float = Field(gt=0, lt=5000)
-    calories_intake: float = Field(gt=0, lt=10000)
+    amount_grams: float = Field(ge=1, le=5000)
+    calories_intake: float = Field(ge=1, le=10000)
     proteins: Optional[float] = Field(default=None, ge=0)
     fats: Optional[float] = Field(default=None, ge=0)
     carbohydrates: Optional[float] = Field(default=None, ge=0)

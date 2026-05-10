@@ -200,7 +200,6 @@ async def confirm_share(message: Message, state: FSMContext) -> None:
     sender_name = sender.username if sender else "Користувач"
 
     # Надсилаємо файл отримувачу
-    from aiogram import Bot
     bot = message.bot
     file = BufferedInputFile(
         pdf_bytes,

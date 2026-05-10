@@ -27,5 +27,6 @@ async def memory_usage():
 
 @app.get("/cpu")
 async def cpu_usage():
-    cpu_percent = psutil.cpu_percent(interval=0.1)
+    process = psutil.Process(os.getpid())
+    cpu_percent = process.cpu_percent(interval=0.1)
     return cpu_percent

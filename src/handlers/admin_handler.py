@@ -32,7 +32,6 @@ def admin_menu_keyboard():
     builder.button(text="📊 Статистика")
     builder.button(text="📢 Розсилка")
     builder.button(text="🚫 Заблокувати")
-    builder.button(text="🔄 Скинути кеш")
     builder.button(text="🏠 Menu")
     builder.adjust(2)
     return builder.as_markup(resize_keyboard=True)
@@ -125,7 +124,6 @@ async def confirm_broadcast(message: Message, state: FSMContext) -> None:
         service = AdminService(session)
         user_ids = await service.get_all_user_ids()
 
-    from aiogram import Bot
     bot = message.bot
     sent = 0
     failed = 0

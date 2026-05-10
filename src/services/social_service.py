@@ -92,40 +92,56 @@ class SocialService:
         challenge = await self._social_repo.get_challenge_by_id(challenge_id)
         if not challenge:
             return []
-        # Беремо учасників
+
         from sqlalchemy import select
         from src.models.domain import ChallengeParticipant, User
+        from src.repository.activity_repo import ActivityRepository
+
         result = await self._social_repo._session.execute(
             select(ChallengeParticipant, User)
             .join(User, ChallengeParticipant.user_id == User.user_id)
             .where(ChallengeParticipant.challenge_id == challenge_id)
         )
+
         rows = result.all()
         entries = []
+
+        days = max((challenge.end_date - challenge.start_date).days + 1, 1)
+        act_repo = ActivityRepository(self._social_repo._session)
+
         for participant, user in rows:
-            # Оновлюємо прогрес з реальних даних
+            records = await act_repo.get_time_series(user.user_id, days=days)
+
             if challenge.metric == "calories_burned":
-                from src.repository.activity_repo import ActivityRepository
-                act_repo = ActivityRepository(self._social_repo._session)
-                current = await act_repo.get_total_calories(user.user_id)
+                current = float(sum(r.calories_burned for r in records))
+
             elif challenge.metric == "duration_minutes":
-                from src.repository.activity_repo import ActivityRepository
-                act_repo = ActivityRepository(self._social_repo._session)
-                records = await act_repo.get_time_series(user.user_id, days=30)
                 current = float(sum(r.duration_minutes for r in records))
+
+            elif challenge.metric == "workouts_count":
+                current = float(len(records))
+
             else:
                 current = participant.progress
 
-            await self._social_repo.update_progress(challenge_id, user.user_id, current)
-            entries.append({
-                "user_id": user.user_id,
-                "username": user.username,
-                "progress": round(current, 1),
-                "target": challenge.goal_value,
-            })
-        # Сортуємо за прогресом спадаючи
+            await self._social_repo.update_progress(
+                challenge_id,
+                user.user_id,
+                current,
+            )
+
+            entries.append(
+                {
+                    "user_id": user.user_id,
+                    "username": user.username,
+                    "progress": round(current, 1),
+                    "target": challenge.goal_value,
+                }
+            )
+
         entries.sort(key=lambda x: x["progress"], reverse=True)
         return entries
+
     async def invite_friend_to_challenge(
         self,
         requester_id: int,

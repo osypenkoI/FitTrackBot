@@ -176,7 +176,7 @@ async def handle_age(message: Message, state: FSMContext) -> None:
         return
     await state.update_data(age=age)
     await message.answer(
-        "⚖️ Введіть вашу вагу в кілограмах (від 10 до 500):\n<i>Приклад: 65.5</i>",
+        "⚖️ Введіть вашу вагу в кілограмах (від 20 до 500):\n<i>Приклад: 65.5</i>",
         parse_mode="HTML",
     )
     await state.set_state(RegistrationStates.waiting_weight)
@@ -423,7 +423,7 @@ async def handle_edit_value(message: Message, state: FSMContext) -> None:
                 raise ValueError
             value = round(w, 1)
         except ValueError:
-            await message.answer("❌ Введіть число від 10 до 500:")
+            await message.answer("❌ Введіть число від 20 до 500:")
             return
     elif field == "height":
         try:
