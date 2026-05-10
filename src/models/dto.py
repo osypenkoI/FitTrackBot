@@ -2,7 +2,7 @@
 DTO-об'єкти FitTrackBot для передачі даних між шарами та валідації через Pydantic.
 """
 
-from datetime import date, datetime
+from datetime import date as DateType, datetime
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
@@ -63,7 +63,7 @@ class NutritionInputDTO(BaseModel):
     proteins: Optional[float] = Field(default=None, ge=0)
     fats: Optional[float] = Field(default=None, ge=0)
     carbohydrates: Optional[float] = Field(default=None, ge=0)
-    date: Optional[date] = None
+    date: Optional[DateType] = None
 
 
 class ChallengeCreateDTO(BaseModel):
@@ -73,12 +73,12 @@ class ChallengeCreateDTO(BaseModel):
     description: Optional[str] = Field(default=None, max_length=512)
     goal_value: float = Field(gt=0)
     metric: str = Field(min_length=2, max_length=64)
-    start_date: date
-    end_date: date
+    start_date: DateType
+    end_date: DateType
 
     @field_validator("end_date")
     @classmethod
-    def end_after_start(cls, v: date, info) -> date:
+    def end_after_start(cls, v: DateType, info) -> DateType:
         if "start_date" in info.data and v <= info.data["start_date"]:
             raise ValueError("Дата завершення має бути пізніше дати початку")
         return v
@@ -103,5 +103,5 @@ class ReportRequestDTO(BaseModel):
     """DTO запиту звіту."""
     user_id: int
     format: str = Field(pattern="^(pdf|excel)$")
-    date_from: date
-    date_to: date
+    date_from: DateType
+    date_to: DateType
