@@ -126,3 +126,6 @@ class ProfileService:
         await self._repo.save(user)
         await self._repo.save_metrics(metrics)
         return True
+    
+    async def get_user_by_telegram_id(self, telegram_id: int):
+        return await self._repo.get_by_telegram_id(telegram_id)

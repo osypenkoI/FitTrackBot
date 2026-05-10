@@ -90,7 +90,7 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     await state.clear()
     async with db_manager.session_factory() as session:
         service = ProfileService(session)
-        user = await service._repo.get_by_telegram_id(message.from_user.id)
+        user = await service.get_user_by_telegram_id(message.from_user.id)
     if user:
         await message.answer(
             "З поверненням! Поділіться номером для авторизації.",

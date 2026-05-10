@@ -338,3 +338,8 @@ class AnalyticsCore:
         plt.close(fig)
         buf.seek(0)
         return buf.read()
+
+    async def detect_user_anomalies(self, user_id: int) -> dict:
+        records = await self._repo.get_by_user(user_id, limit=100)
+        values = [r.calories_burned for r in records]
+        return self.detect_anomalies(values)

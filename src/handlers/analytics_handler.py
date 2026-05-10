@@ -5,7 +5,6 @@ from aiogram import Router, F
 from aiogram.types import Message, BufferedInputFile
 from src.database.connection import db_manager
 from src.services.analytics_core import AnalyticsCore
-from src.repository.activity_repo import ActivityRepository
 from src.utils.keyboards import main_menu_keyboard, report_format_keyboard
 from src.utils.formatters import format_analytics
 
@@ -31,10 +30,7 @@ async def show_analytics(message: Message) -> None:
             return
 
         # Виявлення аномалій
-        activity_repo = ActivityRepository(session)
-        records = await activity_repo.get_by_user(message.from_user.id, limit=100)
-        values = [r.calories_burned for r in records]
-        anomaly_result = core.detect_anomalies(values)
+        anomaly_result = await core.detect_user_anomalies(message.from_user.id)
 
     text = format_analytics(metrics, anomaly_result)
 
