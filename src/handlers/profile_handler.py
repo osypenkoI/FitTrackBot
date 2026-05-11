@@ -193,8 +193,8 @@ async def handle_weight(message: Message, state: FSMContext) -> None:
             parse_mode="HTML",
         )
         return
-    if weight < 10:
-        await message.answer("❌ Вага не може бути меншою за 10 кг:")
+    if weight < 20:
+        await message.answer("❌ Вага не може бути меншою за 20 кг:")
         return
     if weight > 500:
         await message.answer("❌ Вага не може перевищувати 500 кг:")
@@ -389,7 +389,7 @@ async def handle_edit_field(message: Message, state: FSMContext) -> None:
     prompts = {
         "username": "Введіть нове ім'я (2–50 символів):",
         "age": "Введіть новий вік (5–120):",
-        "weight": "Введіть нову вагу в кг (10–500):",
+        "weight": "Введіть нову вагу в кг (20–500):",
         "height": "Введіть новий зріст в см (50–300):",
         "activity_level": None,
     }
@@ -419,7 +419,7 @@ async def handle_edit_value(message: Message, state: FSMContext) -> None:
     elif field == "weight":
         try:
             w = float(text.replace(",", "."))
-            if not (10 <= w <= 500):
+            if not (20 <= w <= 500):
                 raise ValueError
             value = round(w, 1)
         except ValueError:

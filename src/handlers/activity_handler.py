@@ -79,7 +79,7 @@ async def handle_activity_type(callback: CallbackQuery, state: FSMContext) -> No
     activity_type = callback.data.split(":")[1]
     await state.update_data(activity_type=activity_type, user_id=callback.from_user.id)
     await callback.message.answer(
-        "⏱ Введіть тривалість тренування в хвилинах (від 1 до 480):\n"
+        "⏱ Введіть тривалість тренування в хвилинах (від 1 до 1440):\n"
         "<i>Приклад: 45</i>",
         parse_mode="HTML",
     )
@@ -100,8 +100,8 @@ async def handle_duration(message: Message, state: FSMContext) -> None:
     if duration < 1:
         await message.answer("❌ Тривалість не може бути меншою за 1 хвилину:")
         return
-    if duration > 480:
-        await message.answer("❌ Тривалість не може перевищувати 480 хвилин (8 год):")
+    if duration > 1440:
+        await message.answer("❌ Тривалість не може перевищувати 1440 хвилин (8 год):")
         return
 
     await state.update_data(duration_minutes=duration)
@@ -434,7 +434,7 @@ async def handle_record_edit_field(message: Message, state: FSMContext) -> None:
 
     prompts = {
         "activity_type": "Введіть новий тип (cardio/strength/yoga/cycling/swimming/running/walking):",
-        "duration_minutes": "Введіть нову тривалість в хвилинах (1–480):",
+        "duration_minutes": "Введіть нову тривалість в хвилинах (1–1440):",
         "food_name": "Введіть нову назву страви:",
         "amount_grams": "Введіть нову кількість у грамах (1–5000):",
         "calories_intake": "Введіть нову кількість калорій (1–10000):",
@@ -458,8 +458,8 @@ async def handle_record_edit_value(message: Message, state: FSMContext) -> None:
         value = text.lower()
 
     elif field == "duration_minutes":
-        if not text.isdigit() or not (1 <= int(text) <= 480):
-            await message.answer("❌ Введіть ціле число від 1 до 480:")
+        if not text.isdigit() or not (1 <= int(text) <= 1440):
+            await message.answer("❌ Введіть ціле число від 1 до 1440:")
             return
         value = int(text)
 

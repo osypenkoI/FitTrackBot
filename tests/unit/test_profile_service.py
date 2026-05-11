@@ -3,6 +3,8 @@
 Перевіряє розрахунок BMR/TDEE та логіку валідації.
 """
 
+from dbm import error
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.services.profile_service import ProfileService
@@ -26,8 +28,8 @@ class TestBMRCalculation:
         weight, height, age, gender = 55.0, 165.0, 22, "female"
         # Act
         result = ProfileService.calculate_bmr(weight, height, age, gender)
-        # Assert — формула: 10*55 + 6.25*165 - 5*22 - 161 = 1370.25
-        assert result == pytest.approx(1370.25, abs=1)
+        # Assert — формула: 10*55 + 6.25*165 - 5*22 - 161 = 1310.25
+        assert result == pytest.approx(1310.25, abs=1)
 
     def test_bmr_invalid_gender_defaults_female(self):
         """Невідомий гендер повертає жіночий BMR."""
@@ -108,8 +110,20 @@ class TestProfileServiceAsync:
         service = ProfileService(mock_session)
         existing = MagicMock()
 
+        valid_data = {
+            "telegram_id": 123456,
+            "username": "testuser",
+            "phone_number": "+380991234567",
+            "weight": 75.0,
+            "height": 180.0,
+            "age": 25,
+            "gender": "male",
+            "activity_level": "medium",
+            "target_goal": "maintain",
+        }
+
         with patch.object(service._repo, "get_by_telegram_id", return_value=existing):
-            user, error = await service.register_user({"telegram_id": 123456})
+            user, error = await service.register_user(valid_data)
 
         assert user is None
         assert "вже зареєстрований" in error

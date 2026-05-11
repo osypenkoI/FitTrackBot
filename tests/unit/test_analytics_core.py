@@ -21,9 +21,9 @@ class TestAnomalyDetection:
         """Різкий стрибок у даних визначається як аномалія."""
         mock_session = AsyncMock()
         core = AnalyticsCore(mock_session)
-        # 20 нормальних значень + 1 пік
-        normal = [200.0] * 20
-        spike = normal + [2000.0] * 5  # стрибок у 10 разів
+        # 24 нормальні значення + 1 явний пік (≤10% — відповідає contamination)
+        normal = [200.0] * 24
+        spike = normal + [3000.0]  # один пік у 15 разів
         result = core.detect_anomalies(spike)
         assert len(result["anomalies"]) > 0
         types = [a["type"] for a in result["anomalies"]]

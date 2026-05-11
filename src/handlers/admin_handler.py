@@ -214,18 +214,3 @@ async def confirm_block(message: Message, state: FSMContext) -> None:
 async def cancel_block(message: Message, state: FSMContext) -> None:
     await message.answer("Скасовано.", reply_markup=admin_menu_keyboard())
     await state.clear()
-
-
-# ── A4: Скидання кешу ────────────────────────────────────────────────────────
-
-@router.message(F.text == "🔄 Скинути кеш")
-async def reset_cache(message: Message) -> None:
-    if not is_admin(message.from_user.id):
-        return
-    # Скидаємо пул підключень (реініціалізуємо з'єднання)
-    await db_manager.close()
-    # Повторна ініціалізація відбудеться при наступному запиті автоматично
-    await message.answer(
-        "✅ Кеш підключень до бази даних скинуто.",
-        reply_markup=admin_menu_keyboard(),
-    )
