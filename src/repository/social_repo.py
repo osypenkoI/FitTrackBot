@@ -2,7 +2,7 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
-from src.models.domain import Challenge, ChallengeParticipant, Friendship, FriendshipStatus
+from src.models.domain import Challenge, ChallengeParticipant, Friendship, FriendshipStatus, User
 from src.repository.base_repo import BaseRepository
 
 
@@ -53,6 +53,16 @@ class SocialRepository:
         await self._session.commit()
         await self._session.refresh(participant)
         return participant
+
+
+    async def get_participants_with_users(self, challenge_id: int):
+        """Повертає учасників челенджу разом із відповідними користувачами."""
+        result = await self._session.execute(
+            select(ChallengeParticipant, User)
+            .join(User, ChallengeParticipant.user_id == User.user_id)
+            .where(ChallengeParticipant.challenge_id == challenge_id)
+        )
+        return result.all()
 
     async def update_progress(
         self, challenge_id: int, user_id: int, progress: float

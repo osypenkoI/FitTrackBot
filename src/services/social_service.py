@@ -6,6 +6,7 @@ from src.models.dto import ChallengeCreateDTO
 from src.repository.social_repo import SocialRepository
 from src.repository.analytics_repo import AnalyticsRepository
 from src.repository.profile_repo import ProfileRepository
+from src.repository.activity_repo import ActivityRepository
 from src.validators.pydantic_validator import PydanticValidator
 
 
@@ -16,6 +17,7 @@ class SocialService:
         self._social_repo = SocialRepository(session)
         self._analytics_repo = AnalyticsRepository(session)
         self._profile_repo = ProfileRepository(session)
+        self._activity_repo = ActivityRepository(session)
         self._validator = PydanticValidator()
 
     async def create_challenge(
@@ -93,24 +95,13 @@ class SocialService:
         if not challenge:
             return []
 
-        from sqlalchemy import select
-        from src.models.domain import ChallengeParticipant, User
-        from src.repository.activity_repo import ActivityRepository
-
-        result = await self._social_repo._session.execute(
-            select(ChallengeParticipant, User)
-            .join(User, ChallengeParticipant.user_id == User.user_id)
-            .where(ChallengeParticipant.challenge_id == challenge_id)
-        )
-
-        rows = result.all()
+        rows = await self._social_repo.get_participants_with_users(challenge_id)
         entries = []
 
         days = max((challenge.end_date - challenge.start_date).days + 1, 1)
-        act_repo = ActivityRepository(self._social_repo._session)
 
         for participant, user in rows:
-            records = await act_repo.get_time_series(user.user_id, days=days)
+            records = await self._activity_repo.get_time_series(user.user_id, days=days)
 
             if challenge.metric == "calories_burned":
                 current = float(sum(r.calories_burned for r in records))

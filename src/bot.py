@@ -8,6 +8,7 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
+from aiogram.types import BotCommand, MenuButtonCommands
 from aiogram.fsm.storage.memory import MemoryStorage
 from src.config import config
 from src.database.connection import db_manager
@@ -21,6 +22,7 @@ from src.handlers import (
     goals_handler,
     reminders_handler,
     admin_handler,
+    navigation_handler,
 )
 
 logging.basicConfig(
@@ -42,8 +44,19 @@ async def main() -> None:
     bot = Bot(token=config.bot_token, parse_mode=ParseMode.HTML)
     dp = Dispatcher(storage=MemoryStorage())
 
+    # Налаштування системної кнопки Telegram Menu та базових команд.
+    # Команда /menu доступна з будь-якого сценарію та скидає поточний FSM-стан.
+    await bot.set_my_commands(
+        [
+            BotCommand(command="start", description="Запустити бота"),
+            BotCommand(command="menu", description="Повернутися до головного меню"),
+        ]
+    )
+    await bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+
     # Реєстрація роутерів (Dispatcher — патерн Observer/Command)
-    dp.include_router(admin_handler.router)       # першим — щоб /admin мав пріоритет
+    dp.include_router(navigation_handler.router)  # першим — глобальне повернення в меню
+    dp.include_router(admin_handler.router)       # /admin має власний доступ
     dp.include_router(profile_handler.router)
     dp.include_router(activity_handler.router)
     dp.include_router(analytics_handler.router)

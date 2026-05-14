@@ -33,18 +33,94 @@ class ForecastStrategy(Protocol):
 class ProphetStrategy:
     """Стратегія прогнозування на основі Facebook Prophet."""
 
-    def fit_predict(self, df: pd.DataFrame, days: int) -> pd.DataFrame:
-        from prophet import Prophet
-        model = Prophet(
-            yearly_seasonality=False,
-            weekly_seasonality=True,
-            daily_seasonality=False,
-            interval_width=0.80,
-        )
-        model.fit(df)
-        future = model.make_future_dataframe(periods=days)
-        forecast = model.predict(future)
-        return forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]]
+    def fit_predict(self, df, days: int):
+        """
+        Будує прогноз через Prophet.
+        Якщо Prophet/CmdStan недоступний у локальному середовищі Windows,
+        автоматично використовує резервний прогноз Holt-Winters.
+        """
+        import logging
+        import pandas as pd
+        from datetime import timedelta
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            from prophet import Prophet
+
+            model = Prophet(
+                daily_seasonality=False,
+                weekly_seasonality=True,
+                yearly_seasonality=False,
+            )
+            model.fit(df)
+
+            future = model.make_future_dataframe(periods=days)
+            forecast = model.predict(future)
+
+            return forecast
+
+        except Exception as exc:
+            logger.warning(
+                "Prophet недоступний, використовується резервний прогноз Holt-Winters: %s",
+                exc,
+            )
+
+            try:
+                from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+                series = df.set_index("ds")["y"].astype(float)
+
+                model = ExponentialSmoothing(
+                    series,
+                    trend="add",
+                    seasonal=None,
+                    initialization_method="estimated",
+                )
+                fitted = model.fit(optimized=True)
+                predicted = fitted.forecast(days)
+
+                last_date = df["ds"].max()
+                future_dates = [
+                    last_date + timedelta(days=i)
+                    for i in range(1, days + 1)
+                ]
+
+                forecast = pd.DataFrame(
+                    {
+                        "ds": future_dates,
+                        "yhat": predicted.values,
+                        "yhat_lower": predicted.values * 0.9,
+                        "yhat_upper": predicted.values * 1.1,
+                    }
+                )
+
+                return forecast
+
+            except Exception as fallback_exc:
+                logger.warning(
+                    "Holt-Winters також недоступний, використовується середнє значення: %s",
+                    fallback_exc,
+                )
+
+                mean_value = float(df["y"].tail(7).mean())
+                last_date = df["ds"].max()
+
+                future_dates = [
+                    last_date + timedelta(days=i)
+                    for i in range(1, days + 1)
+                ]
+
+                forecast = pd.DataFrame(
+                    {
+                        "ds": future_dates,
+                        "yhat": [mean_value for _ in future_dates],
+                        "yhat_lower": [mean_value * 0.9 for _ in future_dates],
+                        "yhat_upper": [mean_value * 1.1 for _ in future_dates],
+                    }
+                )
+
+                return forecast
 
 
 class HoltWintersStrategy:

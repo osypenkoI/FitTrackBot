@@ -3,6 +3,68 @@
 from src.models.domain import User, BodyMetrics, ActivityLog, NutritionLog
 
 
+ACTIVITY_LEVEL_LABELS = {
+    "low": "Низький",
+    "medium": "Середній",
+    "high": "Високий",
+    "very_high": "Дуже високий",
+}
+
+TARGET_GOAL_LABELS = {
+    "weight_loss": "Схуднення",
+    "muscle_gain": "Набір маси",
+    "maintain": "Підтримка форми",
+}
+
+ACTIVITY_TYPE_LABELS = {
+    "cardio": "🏃 Кардіо",
+    "strength": "💪 Силові",
+    "yoga": "🧘 Йога",
+    "cycling": "🚴 Велосипед",
+    "swimming": "🏊 Плавання",
+    "walking": "🚶 Ходьба",
+    "running": "🏃 Біг",
+    "other": "Інше",
+}
+
+MEAL_TYPE_LABELS = {
+    "breakfast": "Сніданок",
+    "lunch": "Обід",
+    "dinner": "Вечеря",
+    "snack": "Перекус",
+}
+
+
+def _raw_value(value) -> str:
+    """Повертає значення enum або рядок без технічного префікса класу."""
+    if value is None:
+        return ""
+    if hasattr(value, "value"):
+        return str(value.value)
+    text = str(value)
+    if "." in text:
+        return text.split(".")[-1].lower()
+    return text.lower()
+
+
+def format_activity_level(value) -> str:
+    """Форматує рівень активності для відображення користувачу."""
+    raw = _raw_value(value)
+    return ACTIVITY_LEVEL_LABELS.get(raw, raw)
+
+
+def format_activity_type(value) -> str:
+    """Форматує тип активності для відображення користувачу."""
+    raw = _raw_value(value)
+    return ACTIVITY_TYPE_LABELS.get(raw, raw)
+
+
+def format_meal_type(value) -> str:
+    """Форматує тип прийому їжі для відображення користувачу."""
+    raw = _raw_value(value)
+    return MEAL_TYPE_LABELS.get(raw, raw)
+
+
 def format_profile(user: User, metrics: BodyMetrics | None) -> str:
     """Форматує повідомлення профілю користувача."""
     name = user.username or "Користувач"
@@ -12,7 +74,7 @@ def format_profile(user: User, metrics: BodyMetrics | None) -> str:
             f"Вік: {metrics.age}\n"
             f"Зріст: {metrics.height} см\n"
             f"Вага: {metrics.weight} кг\n"
-            f"Рівень активності: {user.activity_level}\n"
+            f"Рівень активності: {format_activity_level(user.activity_level)}\n"
             f"BMR: <b>{metrics.bmr:.0f} ккал</b>\n"
             f"TDEE: <b>{metrics.tdee:.0f} ккал</b>\n"
         )
@@ -23,7 +85,7 @@ def format_activity_log(log: ActivityLog) -> str:
     """Форматує запис активності для відображення."""
     return (
         f"✅ Активність збережено!\n\n"
-        f"Тип: {log.activity_type}\n"
+        f"Тип: {format_activity_type(log.activity_type)}\n"
         f"Тривалість: {log.duration_minutes} хв\n"
         f"Спалено: <b>{log.calories_burned:.0f} ккал</b>\n"
         f"Дата: {log.created_at.strftime('%d.%m.%Y %H:%M')}"
@@ -34,7 +96,7 @@ def format_nutrition_log(log: NutritionLog) -> str:
     """Форматує запис харчування для відображення."""
     return (
         f"✅ Харчування збережено!\n\n"
-        f"Прийом: {log.meal_type}\n"
+        f"Прийом: {format_meal_type(log.meal_type)}\n"
         f"Страва: {log.food_name} ({log.amount_grams:.0f} г)\n"
         f"Калорій: <b>{log.calories_intake:.0f} ккал</b>"
     )

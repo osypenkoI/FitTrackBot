@@ -7,6 +7,7 @@ from src.handlers import (
     goals_handler,
     reminders_handler,
     admin_handler,
+    navigation_handler,
 )
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "goals_handler",
     "reminders_handler",
     "admin_handler",
+    "navigation_handler",
 ]
