@@ -27,7 +27,7 @@ class ShareStates(StatesGroup):
 @router.message(F.text == "📄 Звіти")
 async def show_reports_menu(message: Message) -> None:
     await message.answer(
-        "Оберіть варіант отримання звіту за останні 7 днів:",
+        "Оберіть формат звіту:",
         reply_markup=report_format_keyboard(),
     )
 

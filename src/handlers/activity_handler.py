@@ -101,7 +101,7 @@ async def handle_duration(message: Message, state: FSMContext) -> None:
         await message.answer("❌ Тривалість не може бути меншою за 1 хвилину:")
         return
     if duration > 1440:
-        await message.answer("❌ Тривалість не може перевищувати 1440 хвилин (8 год):")
+        await message.answer("❌ Тривалість не може перевищувати 1440 хвилин (24 год):")
         return
 
     await state.update_data(duration_minutes=duration)
